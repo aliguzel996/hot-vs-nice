@@ -1,0 +1,57 @@
+{
+  "name": "hot-vs-nice",
+  "version": "0.1.0",
+  "author": "OpenAI Codex",
+  "description": "hot-vs-nice desktop utility for extracting SVG colors, matching Pantone approximations, and previewing palette variations.",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "start:web": "node server.mjs",
+    "build:icons": "node scripts/generate-icons.mjs",
+    "build:web": "node scripts/build-web.mjs",
+    "dist:github": "npm run build:icons && electron-packager . \"hot-vs-nice\" --platform=win32 --arch=x64 --out=release/github --overwrite --prune=true --asar --icon=assets/icons/app-icon.ico",
+    "dist:setup": "npm run build:icons && electron-builder --win nsis --publish never",
+    "dist:win": "npm run dist:github",
+    "package:all": "npm run build:web && npm run dist:github && npm run dist:setup"
+  },
+  "build": {
+    "appId": "com.openai.hotvsnice",
+    "productName": "hot-vs-nice",
+    "directories": {
+      "output": "release/itch"
+    },
+    "files": [
+      "index.html",
+      "styles.css",
+      "src/**/*",
+      "electron/**/*",
+      "assets/icons/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icons/app-icon.ico",
+      "artifactName": "hot-vs-nice-setup-${version}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-packager": "^17.1.2",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5"
+  }
+}

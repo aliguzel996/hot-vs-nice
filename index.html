@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hot-vs-nice</title>
+    <link rel="icon" type="image/png" href="./assets/icons/icon-32.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar panel">
+        <div class="brand-block">
+          <p class="eyebrow">Color Utility / v0.1</p>
+          <h1>Vector Color Options</h1>
+          <p class="lead">
+            Find every color in an SVG, review HEX values, test Pantone matches,
+            and compare print-friendly variations in one place.
+          </p>
+        </div>
+
+        <section class="control-group">
+          <div class="section-label">Import</div>
+          <button class="button button-primary" id="importButton">
+            Start Import
+          </button>
+          <input id="fileInput" type="file" accept=".svg,image/svg+xml" hidden />
+          <button class="button" id="loadSampleButton">Load Sample Poster</button>
+          <p class="microcopy" id="statusText">
+            Ready. Load an SVG or open the sample poster.
+          </p>
+        </section>
+
+        <section class="control-group">
+          <div class="section-label">Actions</div>
+          <button class="button button-primary" id="snapPantoneButton">
+            Snap To Nearest Pantone
+          </button>
+          <button class="button" id="toggleColorModelButton">
+            Enable CMYK Mode
+          </button>
+          <button class="button" id="resetButton">Reset To Original</button>
+          <button class="button" id="copyPaletteButton">Copy HEX List</button>
+          <button class="button" id="exportButton">SVG Export</button>
+        </section>
+
+        <section class="control-group">
+          <div class="section-label">Text Overlay</div>
+          <textarea id="textContentInput" rows="3" placeholder="Type text"></textarea>
+          <div class="form-grid form-grid-tight">
+            <label>
+              <span class="field-label">Font</span>
+              <select id="textFontSelect">
+                <option value="monospace">Monospace</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Times New Roman', serif">Times</option>
+                <option value="'Courier New', monospace">Courier</option>
+                <option value="Georgia, serif">Georgia</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">Color</span>
+              <input id="textColorInput" type="color" value="#111111" />
+            </label>
+            <label>
+              <span class="field-label">Size</span>
+              <input id="textSizeInput" type="number" min="12" max="240" step="1" value="56" />
+            </label>
+            <label>
+              <span class="field-label">X</span>
+              <input id="textXInput" type="number" min="0" max="780" step="1" value="110" />
+            </label>
+            <label>
+              <span class="field-label">Y</span>
+              <input id="textYInput" type="number" min="0" max="1080" step="1" value="180" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button class="button button-primary" id="addTextButton">Add Text</button>
+            <button class="button" id="removeTextButton">Remove Text</button>
+          </div>
+          <p class="microcopy">
+            Add text to the source SVG, then adjust font, color, size, and position here.
+          </p>
+        </section>
+
+        <section class="control-group">
+          <div class="section-label">Source</div>
+          <dl class="info-grid">
+            <div>
+              <dt>File</dt>
+              <dd id="fileNameValue">sample-poster.svg</dd>
+            </div>
+            <div>
+              <dt>Colors</dt>
+              <dd id="colorCountValue">0</dd>
+            </div>
+            <div>
+              <dt>Avg Delta</dt>
+              <dd id="deltaValue">0.00</dd>
+            </div>
+            <div>
+              <dt>Mode</dt>
+              <dd id="modeValue">Original</dd>
+            </div>
+            <div>
+              <dt>Color Space</dt>
+              <dd id="colorModelValue">RGB</dd>
+            </div>
+          </dl>
+        </section>
+
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar panel">
+          <div class="topbar-header">
+            <div>
+              <span class="metric-label">Pinned History</span>
+              <strong class="topbar-title">Pinned Versions</strong>
+            </div>
+            <div class="panel-actions">
+              <button class="button button-small" id="openHistoryModalButton">
+                View All
+              </button>
+              <span class="tag" id="historyCountTag">0 saved</span>
+            </div>
+          </div>
+          <div class="history-strip" id="historyStrip"></div>
+        </header>
+
+        <section class="preview-grid">
+          <article class="panel">
+            <div class="panel-header">
+              <h2 id="leftPreviewTitle">Original</h2>
+              <div class="panel-actions">
+                <button class="button button-small" id="toggleOriginalButton" hidden>
+                  Show Original
+                </button>
+                <span class="tag" id="leftPreviewTag">source</span>
+              </div>
+            </div>
+            <div class="preview-frame" id="originalPreview"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <h2>Current Preview</h2>
+              <div class="panel-actions">
+                <button class="button button-primary button-small" id="pinPreviewButton">
+                  Pin
+                </button>
+                <span class="tag" id="activePreviewTag">original</span>
+              </div>
+            </div>
+            <div class="preview-frame" id="activePreview"></div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Color Inventory</h2>
+            <span class="tag">HEX / Pantone / Override</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Swatch</th>
+                  <th>HEX</th>
+                  <th>Use Count</th>
+                  <th>Closest Pantone</th>
+                  <th>Delta</th>
+                  <th>Override</th>
+                </tr>
+              </thead>
+              <tbody id="paletteTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Alternative Looks</h2>
+            <span class="tag">apply / preview</span>
+          </div>
+          <div class="variant-grid" id="variantGrid"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="variantCardTemplate">
+      <article class="variant-card">
+        <div class="variant-preview"></div>
+        <div class="variant-meta">
+          <div>
+            <h3></h3>
+            <p></p>
+          </div>
+          <button class="button button-primary">Apply Look</button>
+        </div>
+      </article>
+    </template>
+
+    <div class="history-modal" id="historyModal" hidden>
+      <div class="history-modal-backdrop" id="historyModalBackdrop"></div>
+      <section
+        class="history-modal-panel panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="historyModalTitle"
+      >
+        <div class="panel-header">
+          <h2 id="historyModalTitle">All Pinned History</h2>
+          <div class="panel-actions">
+            <span class="tag" id="historyModalCountTag">0 saved</span>
+            <button class="button button-small" id="closeHistoryModalButton">
+              Close
+            </button>
+          </div>
+        </div>
+        <div class="history-modal-grid" id="historyModalGrid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
