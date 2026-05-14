@@ -1,0 +1,25 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "hot-vs-nice",
+  "description": "Free open-source SVG color exploration tool for extracting used colors, reviewing nearby Pantone approximations, previewing print-oriented variations, and exporting active SVG results.",
+  "applicationCategory": "GraphicsApplication",
+  "operatingSystem": "Windows, Web Browser",
+  "creator": {
+    "@type": "Person",
+    "name": "Ali Güzel"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "YCSWU"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "softwareVersion": "0.1.0",
+  "url": "https://github.com/aliguzel996/hot-vs-nice",
+  "downloadUrl": "https://github.com/aliguzel996/hot-vs-nice/releases/latest",
+  "codeRepository": "https://github.com/aliguzel996/hot-vs-nice"
+}

@@ -1,5 +1,22 @@
 # hot-vs-nice
 
+## Project Summary
+
+hot-vs-nice is a hybrid desktop and web tool for exploring SVG color variations, reviewing used HEX colors, comparing nearby Pantone approximations, previewing print-oriented shifts, and exporting the active SVG.
+
+### Use
+
+- Open or import an SVG
+- Review detected colors and Pantone approximations
+- Apply overrides, pin versions, and compare variations
+- Export the active SVG result
+
+### Downloads and releases
+
+- Repository: https://github.com/aliguzel996/hot-vs-nice
+- Latest releases: https://github.com/aliguzel996/hot-vs-nice/releases/latest
+- Web build target: `release/web/hot-vs-nice`
+
 ## English
 
 hot-vs-nice is a desktop and web utility for exploring alternative color directions on SVG artwork.

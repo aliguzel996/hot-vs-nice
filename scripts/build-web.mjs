@@ -14,7 +14,17 @@ await execFileAsync("npm.cmd", ["run", "build:icons"], { cwd: rootDir, shell: tr
 await rm(targetDir, { recursive: true, force: true });
 await mkdir(targetDir, { recursive: true });
 
-for (const entry of ["index.html", "styles.css", "src", "assets"]) {
+for (const entry of [
+  "index.html",
+  "styles.css",
+  "src",
+  "assets",
+  "metadata",
+  "app.manifest.json",
+  "AI.md",
+  "CHANGELOG.md",
+  "llms.txt",
+]) {
   await cp(path.join(rootDir, entry), path.join(targetDir, entry), { recursive: true });
 }
 

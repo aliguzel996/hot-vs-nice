@@ -1,8 +1,16 @@
 {
   "name": "hot-vs-nice",
   "version": "0.1.0",
-  "author": "OpenAI Codex",
+  "author": "Ali Güzel / YCSWU",
   "description": "hot-vs-nice desktop utility for extracting SVG colors, matching Pantone approximations, and previewing palette variations.",
+  "homepage": "https://github.com/aliguzel996/hot-vs-nice",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aliguzel996/hot-vs-nice.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aliguzel996/hot-vs-nice/issues"
+  },
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -16,7 +24,7 @@
     "package:all": "npm run build:web && npm run dist:github && npm run dist:setup"
   },
   "build": {
-    "appId": "com.openai.hotvsnice",
+    "appId": "com.ycswu.hotvsnice",
     "productName": "hot-vs-nice",
     "directories": {
       "output": "release/itch"
@@ -27,6 +35,11 @@
       "src/**/*",
       "electron/**/*",
       "assets/icons/**/*",
+      "metadata/**/*",
+      "app.manifest.json",
+      "AI.md",
+      "CHANGELOG.md",
+      "llms.txt",
       "package.json"
     ],
     "win": {

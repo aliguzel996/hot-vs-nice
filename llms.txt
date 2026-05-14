@@ -1,0 +1,12 @@
+# hot-vs-nice
+
+hot-vs-nice is a free open-source SVG color exploration tool by Ali Güzel / YCSWU.
+
+- Type: hybrid desktop and static web application
+- Main purpose: inspect SVG colors, preview alternative palettes, and export revised SVG artwork
+- Inputs: SVG files, text overlay input
+- Outputs: SVG export, Windows desktop builds, static web build
+- Repository: https://github.com/aliguzel996/hot-vs-nice
+- Releases: https://github.com/aliguzel996/hot-vs-nice/releases/latest
+
+It is not a raster editor and does not guarantee exact Pantone certification.

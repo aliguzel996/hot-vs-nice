@@ -8,6 +8,7 @@ import {
   normalizeHex,
   snapHexToPrintableCmyk,
 } from "./lib/color-utils.js";
+import { validateAppMetadata } from "./lib/app-metadata.js";
 import { analyzeSvgColors, applyColorMap } from "./lib/svg-analyzer.js";
 
 function pickRandom(items) {
@@ -1450,4 +1451,5 @@ if (desktopBridge) {
   });
 }
 
+validateAppMetadata();
 setSource(createSampleSvg(), "sample-poster.svg");

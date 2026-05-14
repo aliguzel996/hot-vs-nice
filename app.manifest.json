@@ -1,0 +1,70 @@
+{
+  "id": "hot-vs-nice",
+  "name": "hot-vs-nice",
+  "version": "0.1.0",
+  "shortDescription": "SVG color exploration tool for testing palette changes, Pantone approximations, and print-oriented variations.",
+  "aiDescription": "This project is a free open-source creative tool for exploring alternative SVG color directions without adding workflow theater. It imports SVG artwork, extracts used colors, approximates nearby Pantone values, previews CMYK-leaning print-safe shifts, and exports the active SVG variation.",
+  "category": "graphics",
+  "creator": "Ali Güzel",
+  "publisher": "YCSWU",
+  "license": "Open source",
+  "website": "",
+  "github": "https://github.com/aliguzel996/hot-vs-nice",
+  "releaseApiUrl": "https://api.github.com/repos/aliguzel996/hot-vs-nice/releases/latest",
+  "latestReleaseUrl": "https://github.com/aliguzel996/hot-vs-nice/releases/latest",
+  "downloadUrls": {
+    "windows": "",
+    "mac": "",
+    "linux": ""
+  },
+  "keywords": [
+    "svg",
+    "vector color",
+    "pantone approximation",
+    "cmyk preview",
+    "print palette",
+    "desktop tool",
+    "web tool",
+    "ycswu"
+  ],
+  "useCases": [
+    "Compare alternative color directions for SVG posters and logos",
+    "Review used colors before export",
+    "Approximate nearby Pantone values for print-oriented decisions",
+    "Generate and pin multiple palette variations during visual exploration"
+  ],
+  "notFor": [
+    "Raster photo editing",
+    "Exact Pantone certification",
+    "Multi-format vector editing outside SVG"
+  ],
+  "inputFormats": [
+    "svg",
+    "plain text overlay input"
+  ],
+  "outputFormats": [
+    "svg",
+    "windows portable app",
+    "windows setup exe",
+    "static web build"
+  ],
+  "systemRequirements": [
+    "Modern desktop web browser for the web build",
+    "Windows x64 for packaged desktop builds",
+    "JavaScript enabled"
+  ],
+  "changelog": [
+    {
+      "version": "0.1.0",
+      "notes": [
+        "Initial public tool structure",
+        "SVG color extraction and HEX inventory",
+        "Pantone approximation workflow",
+        "Pinned comparison history",
+        "CMYK print preview mode",
+        "SVG export and text overlay controls"
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-11"
+}

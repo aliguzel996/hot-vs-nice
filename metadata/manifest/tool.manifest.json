@@ -1,0 +1,45 @@
+{
+  "manifestVersion": 1,
+  "tool": {
+    "id": "hot-vs-nice",
+    "name": "hot-vs-nice",
+    "version": "0.1.0",
+    "publisher": "YCSWU",
+    "creator": "Ali Güzel",
+    "repository": "https://github.com/aliguzel996/hot-vs-nice",
+    "latestReleaseUrl": "https://github.com/aliguzel996/hot-vs-nice/releases/latest",
+    "releaseApiUrl": "https://api.github.com/repos/aliguzel996/hot-vs-nice/releases/latest",
+    "appType": "hybrid",
+    "surfaces": [
+      "desktop",
+      "web"
+    ],
+    "platforms": [
+      "windows",
+      "web"
+    ],
+    "inputs": [
+      "svg",
+      "text"
+    ],
+    "outputs": [
+      "svg",
+      "windows-portable",
+      "windows-setup",
+      "static-web-build"
+    ],
+    "primaryEntryPoints": {
+      "desktop": "electron/main.cjs",
+      "web": "index.html"
+    },
+    "releaseStructure": {
+      "web": "release/web/hot-vs-nice",
+      "github": "release/github/hot-vs-nice-win32-x64",
+      "itch": "release/itch"
+    },
+    "hub": {
+      "ready": true,
+      "sourceManifest": "../../app.manifest.json"
+    }
+  }
+}

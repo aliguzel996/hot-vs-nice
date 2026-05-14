@@ -67,6 +67,12 @@ async function saveSvgDialog(payload) {
   return { filePath: result.filePath };
 }
 
+async function readAppManifest() {
+  const manifestPath = path.join(__dirname, "..", "app.manifest.json");
+  const raw = await fs.readFile(manifestPath, "utf8");
+  return JSON.parse(raw);
+}
+
 function buildMenu() {
   const template = [
     {
@@ -110,6 +116,7 @@ ipcMain.handle("desktop:get-meta", () => ({
   platform: process.platform,
   version: app.getVersion()
 }));
+ipcMain.handle("desktop:get-app-manifest", readAppManifest);
 
 app.whenReady().then(() => {
   createWindow();
