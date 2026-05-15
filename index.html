@@ -12,11 +12,7 @@
       <aside class="sidebar panel">
         <div class="brand-block">
           <p class="eyebrow">Color Utility / v0.1</p>
-          <h1>Vector Color Options</h1>
-          <p class="lead">
-            Find every color in an SVG, review HEX values, test Pantone matches,
-            and compare print-friendly variations in one place.
-          </p>
+          <h1>hot-vs-nice</h1>
         </div>
 
         <section class="control-group">
@@ -26,9 +22,7 @@
           </button>
           <input id="fileInput" type="file" accept=".svg,image/svg+xml" hidden />
           <button class="button" id="loadSampleButton">Load Sample Poster</button>
-          <p class="microcopy" id="statusText">
-            Ready. Load an SVG or open the sample poster.
-          </p>
+          <p class="microcopy" id="statusText" hidden></p>
         </section>
 
         <section class="control-group">
@@ -66,22 +60,13 @@
               <span class="field-label">Size</span>
               <input id="textSizeInput" type="number" min="12" max="240" step="1" value="56" />
             </label>
-            <label>
-              <span class="field-label">X</span>
-              <input id="textXInput" type="number" min="0" max="780" step="1" value="110" />
-            </label>
-            <label>
-              <span class="field-label">Y</span>
-              <input id="textYInput" type="number" min="0" max="1080" step="1" value="180" />
-            </label>
           </div>
+          <input id="textXInput" type="hidden" value="110" />
+          <input id="textYInput" type="hidden" value="180" />
           <div class="button-row">
             <button class="button button-primary" id="addTextButton">Add Text</button>
             <button class="button" id="removeTextButton">Remove Text</button>
           </div>
-          <p class="microcopy">
-            Add text to the source SVG, then adjust font, color, size, and position here.
-          </p>
         </section>
 
         <section class="control-group">
@@ -213,6 +198,9 @@
         <div class="panel-header">
           <h2 id="historyModalTitle">All Pinned History</h2>
           <div class="panel-actions">
+            <button class="button button-small" id="downloadAllHistoryButton">
+              Download All
+            </button>
             <span class="tag" id="historyModalCountTag">0 saved</span>
             <button class="button button-small" id="closeHistoryModalButton">
               Close

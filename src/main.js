@@ -267,6 +267,7 @@ const elements = {
   historyModalBackdrop: document.querySelector("#historyModalBackdrop"),
   historyModalGrid: document.querySelector("#historyModalGrid"),
   historyModalCountTag: document.querySelector("#historyModalCountTag"),
+  downloadAllHistoryButton: document.querySelector("#downloadAllHistoryButton"),
   closeHistoryModalButton: document.querySelector("#closeHistoryModalButton"),
   leftPreviewTitle: document.querySelector("#leftPreviewTitle"),
   leftPreviewTag: document.querySelector("#leftPreviewTag"),
@@ -379,7 +380,7 @@ function handleTextDrag(event) {
   state.textOverlay.x = clamp(Math.round(point.x - state.dragState.offsetX), 0, 780);
   state.textOverlay.y = clamp(Math.round(point.y - state.dragState.offsetY), 0, 1080);
   syncTextOverlayInputs();
-  applySourceState();
+  applySourceState({ preserveDrag: true });
   elements.statusText.textContent = "Text overlay was moved.";
 }
 
@@ -827,11 +828,126 @@ function closeHistoryModal() {
   elements.historyModal.hidden = true;
 }
 
+function parseSvgGeometry(svgMarkup) {
+  const documentFragment = new DOMParser().parseFromString(svgMarkup, "image/svg+xml");
+  const svgElement = documentFragment.documentElement;
+  const viewBox = svgElement.getAttribute("viewBox");
+  if (viewBox) {
+    const [minX, minY, width, height] = viewBox
+      .trim()
+      .split(/\s+/)
+      .map(Number);
+    if ([minX, minY, width, height].every(Number.isFinite) && width > 0 && height > 0) {
+      return {
+        minX,
+        minY,
+        width,
+        height,
+        innerMarkup: svgElement.innerHTML,
+      };
+    }
+  }
+
+  const width = Number(svgElement.getAttribute("width")) || 780;
+  const height = Number(svgElement.getAttribute("height")) || 1080;
+  return {
+    minX: 0,
+    minY: 0,
+    width,
+    height,
+    innerMarkup: svgElement.innerHTML,
+  };
+}
+
+function buildHistorySheetSvg() {
+  if (!state.history.length) {
+    return "";
+  }
+
+  const itemCount = state.history.length;
+  const columns = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(itemCount))));
+  const rows = Math.ceil(itemCount / columns);
+  const cellWidth = 220;
+  const cellHeight = 306;
+  const outerPadding = 24;
+  const gap = 12;
+  const contentWidth = cellWidth - 20;
+  const contentHeight = cellHeight - 20;
+  const sheetWidth = outerPadding * 2 + columns * cellWidth + (columns - 1) * gap;
+  const sheetHeight = outerPadding * 2 + rows * cellHeight + (rows - 1) * gap;
+
+  const tiles = state.history
+    .map((item, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const x = outerPadding + column * (cellWidth + gap);
+      const y = outerPadding + row * (cellHeight + gap);
+      const geometry = parseSvgGeometry(item.svg);
+      const scale = Math.min(contentWidth / geometry.width, contentHeight / geometry.height);
+      const offsetX = x + (cellWidth - geometry.width * scale) / 2;
+      const offsetY = y + (cellHeight - geometry.height * scale) / 2;
+
+      return `
+  <g transform="translate(${offsetX.toFixed(2)} ${offsetY.toFixed(2)}) scale(${scale.toFixed(5)}) translate(${-geometry.minX} ${-geometry.minY})">
+    ${geometry.innerMarkup}
+  </g>`.trim();
+    })
+    .join("\n");
+
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sheetWidth} ${sheetHeight}" width="${sheetWidth}" height="${sheetHeight}">
+  <rect width="${sheetWidth}" height="${sheetHeight}" fill="#ffffff"/>
+  ${tiles}
+</svg>`.trim();
+}
+
+async function saveSvgMarkup(svgMarkup, suggestedName, successMessage) {
+  if (!svgMarkup) {
+    return;
+  }
+
+  if (desktopBridge) {
+    const result = await desktopBridge.saveSvg({
+      suggestedName,
+      content: svgMarkup,
+    });
+
+    if (result?.filePath) {
+      elements.statusText.textContent = successMessage || `Saved: ${result.filePath}`;
+    }
+    return;
+  }
+
+  const blob = new Blob([svgMarkup], {
+    type: "image/svg+xml;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = suggestedName;
+  link.click();
+  URL.revokeObjectURL(url);
+  if (successMessage) {
+    elements.statusText.textContent = successMessage;
+  }
+}
+
 function createHistoryCard(item, { large = false } = {}) {
-  const button = document.createElement("button");
-  button.type = "button";
+  const button = document.createElement("article");
   button.className = `history-card${item.id === state.selectedHistoryId ? " is-selected" : ""}${large ? " is-large" : ""}`;
+  button.tabIndex = 0;
+  button.setAttribute("role", "button");
   button.addEventListener("click", () => {
+    recallHistoryItem(item.id);
+    if (large) {
+      closeHistoryModal();
+    }
+  });
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
     recallHistoryItem(item.id);
     if (large) {
       closeHistoryModal();
@@ -839,11 +955,27 @@ function createHistoryCard(item, { large = false } = {}) {
   });
 
   button.innerHTML = `
-    <span class="history-card-close" aria-hidden="true">x</span>
+    <div class="history-card-controls">
+      <button class="history-card-download" type="button">SVG</button>
+      <button class="history-card-close" type="button" aria-label="Remove pinned item">x</button>
+    </div>
     <div class="history-card-preview"></div>
     <h3 class="history-card-title">${item.title}</h3>
     <p class="history-card-meta">${item.mode}</p>
   `;
+
+  const downloadButton = button.querySelector(".history-card-download");
+  downloadButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    saveSvgMarkup(
+      item.svg,
+      `${state.fileName.replace(/\.svg$/i, "")}-${item.title.toLowerCase().replace(/\s+/g, "-")}.svg`,
+      `${item.title} was exported as SVG.`,
+    ).catch((error) => {
+      elements.statusText.textContent = error.message;
+    });
+  });
 
   const closeButton = button.querySelector(".history-card-close");
   closeButton.addEventListener("click", (event) => {
@@ -1198,11 +1330,14 @@ function clearHistory() {
   state.leftShowsOriginal = true;
 }
 
-function applySourceState() {
+function applySourceState(options = {}) {
+  const { preserveDrag = false } = options;
   const mergedSvg = composeSourceSvg();
   const analysis = analyzeSvgColors(mergedSvg);
   clearHistory();
-  stopDrag();
+  if (!preserveDrag) {
+    stopDrag();
+  }
 
   state.originalSvg = analysis.sanitizedSvg;
   state.paletteRows = buildPaletteRows(analysis.colors);
@@ -1330,31 +1465,26 @@ function copyPaletteList() {
 }
 
 async function exportActiveSvg() {
-  if (desktopBridge) {
-    const suffix = state.activeMode.toLowerCase().replace(/\s+/g, "-");
-    const suggestedName = state.fileName.replace(/\.svg$/i, `-${suffix}.svg`);
-    const result = await desktopBridge.saveSvg({
-      suggestedName,
-      content: state.activeSvg,
-    });
+  const suffix = state.activeMode.toLowerCase().replace(/\s+/g, "-");
+  await saveSvgMarkup(
+    state.activeSvg,
+    state.fileName.replace(/\.svg$/i, `-${suffix}.svg`),
+    "The active preview was exported as SVG.",
+  );
+}
 
-    if (result?.filePath) {
-      elements.statusText.textContent = `The active preview was saved: ${result.filePath}`;
-    }
+async function exportAllPinnedAsSheet() {
+  if (!state.history.length) {
+    elements.statusText.textContent = "There are no pinned versions to export.";
     return;
   }
 
-  const blob = new Blob([state.activeSvg], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const suffix = state.activeMode.toLowerCase().replace(/\s+/g, "-");
-  link.href = url;
-  link.download = state.fileName.replace(/\.svg$/i, `-${suffix}.svg`);
-  link.click();
-  URL.revokeObjectURL(url);
-  elements.statusText.textContent = "The active preview was exported as SVG.";
+  const svgMarkup = buildHistorySheetSvg();
+  await saveSvgMarkup(
+    svgMarkup,
+    state.fileName.replace(/\.svg$/i, "-pinned-sheet.svg"),
+    "Pinned history was exported as a single SVG sheet.",
+  );
 }
 
 elements.importButton.addEventListener("click", () => {
@@ -1402,6 +1532,11 @@ elements.textYInput.addEventListener("input", () => updateTextOverlay(true));
 elements.pinPreviewButton.addEventListener("click", pinCurrentPreview);
 elements.toggleOriginalButton.addEventListener("click", toggleOriginalPreview);
 elements.openHistoryModalButton.addEventListener("click", openHistoryModal);
+elements.downloadAllHistoryButton.addEventListener("click", () => {
+  exportAllPinnedAsSheet().catch((error) => {
+    elements.statusText.textContent = error.message;
+  });
+});
 elements.closeHistoryModalButton.addEventListener("click", closeHistoryModal);
 elements.historyModalBackdrop.addEventListener("click", closeHistoryModal);
 elements.exportButton.addEventListener("click", () => {
