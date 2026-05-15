@@ -149,6 +149,45 @@ dt,
   gap: 6px;
 }
 
+.text-overlay-list {
+  display: grid;
+  gap: 6px;
+}
+
+.text-overlay-item {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.text-overlay-item.is-active {
+  background: #111111;
+  color: #ffffff;
+}
+
+.text-overlay-item-title,
+.text-overlay-item-meta {
+  display: block;
+}
+
+.text-overlay-item-title {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-overlay-item-meta {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
 .button {
   appearance: none;
   border: 1px solid var(--line);

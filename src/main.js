@@ -221,15 +221,9 @@ const state = {
     original: new Map(),
     active: new Map(),
   },
-  textOverlay: {
-    enabled: false,
-    content: "",
-    x: 110,
-    y: 180,
-    size: 56,
-    color: "#111111",
-    fontFamily: "monospace",
-  },
+  textOverlays: [],
+  activeTextOverlayId: null,
+  textOverlaySerial: 0,
   selectedElementId: null,
   selectedElementKind: null,
   dragState: null,
@@ -252,6 +246,7 @@ const elements = {
   textSizeInput: document.querySelector("#textSizeInput"),
   textXInput: document.querySelector("#textXInput"),
   textYInput: document.querySelector("#textYInput"),
+  textOverlayList: document.querySelector("#textOverlayList"),
   pinPreviewButton: document.querySelector("#pinPreviewButton"),
   toggleOriginalButton: document.querySelector("#toggleOriginalButton"),
   statusText: document.querySelector("#statusText"),
@@ -335,6 +330,53 @@ function stopDrag() {
   state.dragState = null;
 }
 
+function createDefaultTextOverlay() {
+  state.textOverlaySerial += 1;
+  return {
+    id: `text-overlay-${state.textOverlaySerial}`,
+    content: "",
+    x: 110,
+    y: 180,
+    size: 56,
+    color: "#111111",
+    fontFamily: "monospace",
+  };
+}
+
+function getActiveTextOverlay() {
+  return state.textOverlays.find((overlay) => overlay.id === state.activeTextOverlayId) || null;
+}
+
+function getTextOverlayById(overlayId) {
+  return state.textOverlays.find((overlay) => overlay.id === overlayId) || null;
+}
+
+function getOverlayLabel(overlay) {
+  const firstLine = (overlay.content || "").split("\n")[0].trim();
+  return firstLine || "Empty Text";
+}
+
+function renderTextOverlayList() {
+  elements.textOverlayList.innerHTML = "";
+
+  for (const overlay of state.textOverlays) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `text-overlay-item${overlay.id === state.activeTextOverlayId ? " is-active" : ""}`;
+    button.innerHTML = `
+      <span class="text-overlay-item-title">${escapeXml(getOverlayLabel(overlay))}</span>
+      <span class="text-overlay-item-meta">${escapeXml(overlay.fontFamily)} / ${overlay.size}px</span>
+    `;
+    button.addEventListener("click", () => {
+      state.activeTextOverlayId = overlay.id;
+      syncTextOverlayInputs();
+      renderTextOverlayList();
+      setSelectedElement(overlay.id, "text-overlay");
+    });
+    elements.textOverlayList.append(button);
+  }
+}
+
 function toSvgPoint(svgElement, clientX, clientY) {
   const matrix = svgElement.getScreenCTM();
   if (!matrix) {
@@ -347,19 +389,27 @@ function toSvgPoint(svgElement, clientX, clientY) {
 
 function startTextDrag(event, svgElement) {
   const point = toSvgPoint(svgElement, event.clientX, event.clientY);
-  if (!point) {
+  const overlay = getActiveTextOverlay();
+  if (!point || !overlay) {
     return;
   }
 
   state.dragState = {
     previewKey: svgElement.closest("#originalPreview") ? "original" : "active",
-    offsetX: point.x - state.textOverlay.x,
-    offsetY: point.y - state.textOverlay.y,
+    overlayId: overlay.id,
+    offsetX: point.x - overlay.x,
+    offsetY: point.y - overlay.y,
   };
 }
 
 function handleTextDrag(event) {
-  if (!state.dragState || !state.textOverlay.enabled) {
+  if (!state.dragState) {
+    return;
+  }
+
+  const overlay = getTextOverlayById(state.dragState.overlayId);
+  if (!overlay) {
+    stopDrag();
     return;
   }
 
@@ -377,8 +427,8 @@ function handleTextDrag(event) {
     return;
   }
 
-  state.textOverlay.x = clamp(Math.round(point.x - state.dragState.offsetX), 0, 780);
-  state.textOverlay.y = clamp(Math.round(point.y - state.dragState.offsetY), 0, 1080);
+  overlay.x = clamp(Math.round(point.x - state.dragState.offsetX), 0, 780);
+  overlay.y = clamp(Math.round(point.y - state.dragState.offsetY), 0, 1080);
   syncTextOverlayInputs();
   applySourceState({ preserveDrag: true });
   elements.statusText.textContent = "Text overlay was moved.";
@@ -426,7 +476,7 @@ function removeSelectedOverlay() {
     return false;
   }
 
-  disableTextOverlay();
+  removeActiveTextOverlay();
   clearSelectedElement();
   return true;
 }
@@ -482,19 +532,27 @@ function setInteractivePreview(container, svgMarkup, emptyText, previewKey) {
     });
   });
 
-  const overlayText = svgElement.querySelector('[data-overlay-id="text-overlay"]');
-  if (overlayText) {
+  const overlayTexts = svgElement.querySelectorAll('[data-overlay-kind="text-overlay"]');
+  overlayTexts.forEach((overlayText) => {
     overlayText.addEventListener("click", (event) => {
       event.stopPropagation();
-      setSelectedElement("text-overlay", "text-overlay");
+      const overlayId = overlayText.getAttribute("data-overlay-id");
+      state.activeTextOverlayId = overlayId;
+      syncTextOverlayInputs();
+      renderTextOverlayList();
+      setSelectedElement(overlayId, "text-overlay");
     });
     overlayText.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      setSelectedElement("text-overlay", "text-overlay");
+      const overlayId = overlayText.getAttribute("data-overlay-id");
+      state.activeTextOverlayId = overlayId;
+      syncTextOverlayInputs();
+      renderTextOverlayList();
+      setSelectedElement(overlayId, "text-overlay");
       startTextDrag(event, svgElement);
     });
-  }
+  });
 
   svgElement.addEventListener("click", () => {
     clearSelectedElement();
@@ -524,48 +582,65 @@ function escapeXml(value) {
 }
 
 function readTextOverlayInputs() {
-  state.textOverlay.content = elements.textContentInput.value;
-  state.textOverlay.fontFamily = elements.textFontSelect.value;
-  state.textOverlay.color = normalizeHex(elements.textColorInput.value) || "#111111";
-  state.textOverlay.size = clamp(Number(elements.textSizeInput.value) || 56, 12, 240);
-  state.textOverlay.x = clamp(Number(elements.textXInput.value) || 110, 0, 780);
-  state.textOverlay.y = clamp(Number(elements.textYInput.value) || 180, 0, 1080);
+  const overlay = getActiveTextOverlay();
+  if (!overlay) {
+    return null;
+  }
+
+  overlay.content = elements.textContentInput.value;
+  overlay.fontFamily = elements.textFontSelect.value;
+  overlay.color = normalizeHex(elements.textColorInput.value) || "#111111";
+  overlay.size = clamp(Number(elements.textSizeInput.value) || 56, 12, 240);
+  overlay.x = clamp(Number(elements.textXInput.value) || 110, 0, 780);
+  overlay.y = clamp(Number(elements.textYInput.value) || 180, 0, 1080);
+  return overlay;
 }
 
 function syncTextOverlayInputs() {
-  elements.textContentInput.value = state.textOverlay.content;
-  elements.textFontSelect.value = state.textOverlay.fontFamily;
-  elements.textColorInput.value = state.textOverlay.color;
-  elements.textSizeInput.value = String(state.textOverlay.size);
-  elements.textXInput.value = String(state.textOverlay.x);
-  elements.textYInput.value = String(state.textOverlay.y);
+  const overlay = getActiveTextOverlay();
+  if (!overlay) {
+    elements.textContentInput.value = "";
+    elements.textFontSelect.value = "monospace";
+    elements.textColorInput.value = "#111111";
+    elements.textSizeInput.value = "56";
+    elements.textXInput.value = "110";
+    elements.textYInput.value = "180";
+    return;
+  }
+
+  elements.textContentInput.value = overlay.content;
+  elements.textFontSelect.value = overlay.fontFamily;
+  elements.textColorInput.value = overlay.color;
+  elements.textSizeInput.value = String(overlay.size);
+  elements.textXInput.value = String(overlay.x);
+  elements.textYInput.value = String(overlay.y);
 }
 
 function buildTextOverlayMarkup() {
-  readTextOverlayInputs();
-  if (!state.textOverlay.enabled || !state.textOverlay.content.trim()) {
-    return "";
-  }
+  return state.textOverlays
+    .map((overlay) => {
+      const lines = overlay.content
+        .split("\n")
+        .map((line) => line.trimEnd())
+        .filter(Boolean);
 
-  const lines = state.textOverlay.content
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .filter(Boolean);
+      if (!lines.length) {
+        return "";
+      }
 
-  if (!lines.length) {
-    return "";
-  }
+      const lineHeight = Math.round(overlay.size * 1.06);
+      const tspans = lines
+        .map((line, index) => {
+          const x = overlay.x;
+          const y = overlay.y + index * lineHeight;
+          return `<tspan x="${x}" y="${y}">${escapeXml(line)}</tspan>`;
+        })
+        .join("");
 
-  const lineHeight = Math.round(state.textOverlay.size * 1.06);
-  const tspans = lines
-    .map((line, index) => {
-      const x = state.textOverlay.x;
-      const y = state.textOverlay.y + index * lineHeight;
-      return `<tspan x="${x}" y="${y}">${escapeXml(line)}</tspan>`;
+      return `<text data-overlay-kind="text-overlay" data-overlay-id="${overlay.id}" fill="${overlay.color}" font-family="${escapeXml(overlay.fontFamily)}" font-size="${overlay.size}" font-weight="500" letter-spacing="1">${tspans}</text>`;
     })
+    .filter(Boolean)
     .join("");
-
-  return `<text data-overlay-id="text-overlay" fill="${state.textOverlay.color}" font-family="${escapeXml(state.textOverlay.fontFamily)}" font-size="${state.textOverlay.size}" font-weight="500" letter-spacing="1">${tspans}</text>`;
 }
 
 function composeSourceSvg() {
@@ -692,11 +767,12 @@ function syncHighlights() {
   });
 
   document
-    .querySelectorAll('.interactive-svg [data-overlay-id="text-overlay"]')
+    .querySelectorAll('.interactive-svg [data-overlay-kind="text-overlay"]')
     .forEach((node) => {
       node.classList.toggle(
         "is-selected-shape",
-        state.selectedElementKind === "text-overlay",
+        state.selectedElementKind === "text-overlay" &&
+          node.getAttribute("data-overlay-id") === state.selectedElementId,
       );
     });
 }
@@ -1349,6 +1425,7 @@ function applySourceState(options = {}) {
   renderVariants();
   renderHistory();
   renderHistoryModal();
+  renderTextOverlayList();
   updateStats();
 
   elements.statusText.textContent =
@@ -1356,16 +1433,10 @@ function applySourceState(options = {}) {
 }
 
 function resetTextOverlay() {
-  state.textOverlay = {
-    enabled: false,
-    content: "",
-    x: 110,
-    y: 180,
-    size: 56,
-    color: "#111111",
-    fontFamily: "monospace",
-  };
+  state.textOverlays = [];
+  state.activeTextOverlayId = null;
   syncTextOverlayInputs();
+  renderTextOverlayList();
 }
 
 function setSource(svgMarkup, fileName) {
@@ -1405,32 +1476,47 @@ async function readSvgFile(file) {
 }
 
 function updateTextOverlay(live = false) {
-  readTextOverlayInputs();
-  if (!state.textOverlay.enabled) {
+  const overlay = readTextOverlayInputs();
+  if (!overlay) {
     return;
   }
 
   applySourceState();
+  renderTextOverlayList();
   if (live) {
     elements.statusText.textContent = "Text overlay was updated.";
   }
 }
 
 function enableTextOverlay() {
-  readTextOverlayInputs();
-  state.textOverlay.enabled = true;
+  const overlay = createDefaultTextOverlay();
+  overlay.content = elements.textContentInput.value || `Text ${state.textOverlaySerial}`;
+  overlay.fontFamily = elements.textFontSelect.value;
+  overlay.color = normalizeHex(elements.textColorInput.value) || "#111111";
+  overlay.size = clamp(Number(elements.textSizeInput.value) || 56, 12, 240);
+  overlay.x = clamp(Number(elements.textXInput.value) || 110, 0, 780);
+  overlay.y = clamp(Number(elements.textYInput.value) || 180, 0, 1080);
+  state.textOverlays.push(overlay);
+  state.activeTextOverlayId = overlay.id;
   applySourceState();
-  elements.statusText.textContent = "Text overlay was added to the source SVG.";
+  syncTextOverlayInputs();
+  renderTextOverlayList();
+  setSelectedElement(overlay.id, "text-overlay");
+  elements.statusText.textContent = "A new text overlay was added.";
 }
 
-function disableTextOverlay() {
-  if (!state.textOverlay.enabled) {
+function removeActiveTextOverlay() {
+  const overlay = getActiveTextOverlay();
+  if (!overlay) {
     return;
   }
 
-  state.textOverlay.enabled = false;
+  state.textOverlays = state.textOverlays.filter((item) => item.id !== overlay.id);
+  state.activeTextOverlayId = state.textOverlays.at(-1)?.id || null;
   stopDrag();
   applySourceState();
+  syncTextOverlayInputs();
+  renderTextOverlayList();
   elements.statusText.textContent = "Text overlay was removed.";
 }
 
@@ -1522,13 +1608,11 @@ elements.toggleColorModelButton.addEventListener("click", toggleColorModel);
 elements.resetButton.addEventListener("click", resetToOriginal);
 elements.copyPaletteButton.addEventListener("click", copyPaletteList);
 elements.addTextButton.addEventListener("click", enableTextOverlay);
-elements.removeTextButton.addEventListener("click", disableTextOverlay);
+elements.removeTextButton.addEventListener("click", removeActiveTextOverlay);
 elements.textContentInput.addEventListener("input", () => updateTextOverlay(true));
 elements.textFontSelect.addEventListener("change", () => updateTextOverlay(true));
 elements.textColorInput.addEventListener("input", () => updateTextOverlay(true));
 elements.textSizeInput.addEventListener("input", () => updateTextOverlay(true));
-elements.textXInput.addEventListener("input", () => updateTextOverlay(true));
-elements.textYInput.addEventListener("input", () => updateTextOverlay(true));
 elements.pinPreviewButton.addEventListener("click", pinCurrentPreview);
 elements.toggleOriginalButton.addEventListener("click", toggleOriginalPreview);
 elements.openHistoryModalButton.addEventListener("click", openHistoryModal);
