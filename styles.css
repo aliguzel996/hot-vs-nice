@@ -30,6 +30,29 @@ body {
   font-weight: 400;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #111111 #ffffff;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #111111;
+  border-radius: 0;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #ffffff;
+}
+
 button,
 input,
 select,
@@ -278,6 +301,7 @@ dd {
 
 .topbar {
   padding: 8px 10px;
+  min-width: 0;
 }
 
 .topbar-header {
@@ -297,14 +321,18 @@ dd {
 
 .history-strip {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  align-content: flex-start;
   align-items: stretch;
   justify-content: flex-start;
   gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-width: 0;
+  max-height: 170px;
+  overflow-x: hidden;
+  overflow-y: auto;
   scroll-behavior: smooth;
   padding-bottom: 4px;
+  scrollbar-gutter: stable;
 }
 
 .history-card {
@@ -438,6 +466,7 @@ dd {
 
 .history-empty {
   width: 100%;
+  min-height: 72px;
   padding: 12px;
   border: 1px dashed var(--line);
   color: var(--soft-ink);
